@@ -34,8 +34,23 @@ class GameField:
 		self.cells = [[Cell.VOID] * self.field_size for i in range(self.field_size) ]
 		self._field_widget = GameFieldView(self, window)
 
-	def check_lines(self):
-		pass
+	def check_lines(self, current_value):
+		k = self.field_size + self.field_size
+		line = [current_value.value for i in range(k+2)]
+		for i in range(self.field_size):
+			for j in range(self.field_size):
+				line[i] = line[i] & self.cells[i][j].value
+				line[self.field_size+j] = line[self.field_size+j] & self.cells[i][j].value
+			line[k] = line[k] & self.cells[i][i].value
+			line[k+1] = line[k+1] & self.cells[self.field_size-i-1][i].value
+		print(line)		
+		for i in range(len(line)):
+			if line[i] != 0:
+				print(i)
+				self._field_widget.draw_finish_line(i)
+				return True
+		#print(self.cells)
+		return False
 
 
 	def set_cell_value(self, cell_i, cell_j, value):
@@ -98,6 +113,31 @@ class GameFieldView:
 		self.surface_to_draw.blit(self.fieldview , self.rectangle)
 
 
+	def draw_finish_line(self, line):
+		print ("finish line", line)
+		if line < self._field.field_size:
+			line_start = (line*CELL_SIZE + CELL_SIZE/2, 10)
+			line_stop = (line*CELL_SIZE + CELL_SIZE/2, self._width-10)
+			pass
+		elif line >= self._field.field_size and line < self._field.field_size*2:
+			line_start = (10, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
+			line_stop = (self._width-10, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
+			pass
+		elif line == self._field.field_size*2:
+			line_start = (10, 10)
+			line_stop = (self._width-10, self._width-10)
+			pass
+		elif line == self._field.field_size*2 + 1:
+			line_start = (self._width-10, 10)
+			line_stop = (10, self._width-10)
+			pass
+		else:
+			print("exeption")
+			return False
+		pygame.draw.line(self.fieldview, COLOR_WHITE, line_start, line_stop)
+		self.surface_to_draw.blit(self.fieldview , self.rectangle) 
+
+
 
 	def get_coords(self, x, y, button):
 		# вернуть клетку в которую ткнули, если не попали, вернуть None
@@ -123,7 +163,7 @@ class GameRoundManager:
 		self.field = GameField(window, 3)
 
 
-	def done(self):
+	def done(self, current_player):
 		#self.field.draw_line()
 		pass
 
@@ -140,8 +180,8 @@ class GameRoundManager:
 		if None in (cell_i, cell_j):
 			return False
 		if self.field.set_cell_value(cell_i, cell_j, self._players[self.current_player].cell_type) == True:
-			if self.field.check_lines() == True:
-				self.done()
+			if self.field.check_lines(self._players[self.current_player].cell_type) != False:
+				self.done(self.current_player)
 
 			else:
 				self.change_player()
