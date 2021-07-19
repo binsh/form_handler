@@ -35,29 +35,28 @@ class GameField:
 		self._field_widget = GameFieldView(self, window)
 
 	def check_lines(self, current_value):
-		k = self.field_size + self.field_size
-		line = [current_value.value for i in range(k+2)]
+		count_lines = self.field_size * 2 + 2 
+		lines = [current_value.value for i in range(count_lines)]
 		for i in range(self.field_size):
 			for j in range(self.field_size):
-				line[i] = line[i] & self.cells[i][j].value
-				line[self.field_size+j] = line[self.field_size+j] & self.cells[i][j].value
-			line[k] = line[k] & self.cells[i][i].value
-			line[k+1] = line[k+1] & self.cells[self.field_size-i-1][i].value
-		print(line)		
-		for i in range(len(line)):
-			if line[i] != 0:
+				lines[i] = lines[i] & self.cells[i][j].value
+				lines[self.field_size + j] = lines[self.field_size + j] & self.cells[i][j].value
+			lines[count_lines - 2] = lines[count_lines - 2] & self.cells[i][i].value
+			lines[count_lines - 1] = lines[count_lines - 1] & self.cells[self.field_size-i-1][i].value
+		print(lines)		
+		for i in range(len(lines)):
+			if lines[i] != 0:
 				print(i)
 				self._field_widget.draw_finish_line(i)
-				return True
-		#print(self.cells)
-		return False
+				return "done"
+		return "change_player"
 
 
 	def set_cell_value(self, cell_i, cell_j, value):
 		if self.cells[cell_i][cell_j] == Cell.VOID:
 			self.cells[cell_i][cell_j] = value
 			self._field_widget.draw_object_in(cell_i, cell_j)
-			return True
+			return self.check_lines(value)
 		else: 
 			return False
 
@@ -163,8 +162,8 @@ class GameRoundManager:
 		self.field = GameField(window, 3)
 
 
-	def done(self, current_player):
-		#self.field.draw_line()
+	def done(self):
+		#self._players[self.current_player].win()
 		pass
 
 
@@ -179,13 +178,13 @@ class GameRoundManager:
 		cell_i, cell_j = self.field.get_coords(pos, button)
 		if None in (cell_i, cell_j):
 			return False
-		if self.field.set_cell_value(cell_i, cell_j, self._players[self.current_player].cell_type) == True:
-			if self.field.check_lines(self._players[self.current_player].cell_type) != False:
-				self.done(self.current_player)
-
-			else:
-				self.change_player()
-			return True
+		what_to_do = self.field.set_cell_value(cell_i, cell_j, self._players[self.current_player].cell_type)
+			#if self.field.check_lines(self._players[self.current_player].cell_type) != False:
+		if what_to_do == "done":
+			self.done()
+			#return True
+		elif what_to_do == "change_player":
+			self.change_player()
 		return False
 
 
@@ -198,10 +197,24 @@ class MainWindow:
 		self._size = 800,600
 		self._screen = pygame.display.set_mode(self._size)
 		self._clock = pygame.time.Clock()
+		self._round_number =0
 		pygame.init()
 		pygame.display.set_caption("Крестики-Нолики")
 		self._game_manager = GameRoundManager(Player("Piter",Cell.CROSS), Player("Vasian",Cell.ZERO), self._screen)
 		#self._field_widget = GameFieldView(self._game_manager.field, self._screen)
+
+
+	def init_game(self):
+		pass
+
+
+	def init_round(self):
+		self._round_number += 1
+		pass
+
+
+	def end_round(self):
+		pass
 
 
 	def main_loop(self, tick):
@@ -212,7 +225,9 @@ class MainWindow:
 				if event.type == pygame.QUIT:
 					finished = True
 				if event.type == pygame.MOUSEBUTTONUP:
+					#if self.game_state == "round":
 					if self._game_manager.handle_click(event.pos, event.button) == True:
+						#self.end_round()
 						pass
 			pygame.display.flip()				
 
