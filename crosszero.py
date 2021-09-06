@@ -1,68 +1,21 @@
 from enum import Enum
 import pygame
+import forms
 
 CELL_SIZE = 100
 FPS = 30
 COLOR_WHITE = 255, 255, 255
 COLOR_BLACK = 0, 0, 0
 FIELD_COLOR = 250, 10, 10
-
+COLOR_KEY = 0, 0, 0
 COLOR_INACTIVE = pygame.Color('lightskyblue3')
 COLOR_ACTIVE = pygame.Color('dodgerblue2')
-
 
 
 class Cell(Enum):
 	VOID = 0
 	CROSS = 1
 	ZERO = 2
-
-
-class InputBox:
-    def __init__(self, x, y, w, h, text=''):
-        self.rect = pygame.Rect(x, y, w, h)
-        self.color = COLOR_INACTIVE
-        self.text = text
-        self.font = pygame.font.Font(None, 32)
-        self.txt_surface = self.font.render(text, True, self.color)
-        self.active = False
-
-    def handle_event(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # If the user clicked on the input_box rect.
-            if self.rect.collidepoint(event.pos):
-                # Toggle the active variable.
-                self.active = not self.active
-            else:
-                self.active = False
-            # Change the current color of the input box.
-            self.color = COLOR_ACTIVE if self.active else COLOR_INACTIVE
-        if event.type == pygame.KEYDOWN:
-            if self.active:
-                if event.key == pygame.K_RETURN:
-                    print(self.text)
-                    self.text = ''
-                elif event.key == pygame.K_BACKSPACE:
-                    self.text = self.text[:-1]
-                else:
-                    self.text += event.unicode
-                # Re-render the text.
-                self.txt_surface = self.font.render(self.text, True, self.color)
-
-    def update(self):
-        # Resize the box if the text is too long.
-        width = max(200, self.txt_surface.get_width()+10)
-        self.rect.w = width
-
-    def draw(self, screen):
-        # Blit the text.
-        screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
-        # Blit the rect.
-        pygame.draw.rect(screen, self.color, self.rect, 2)
-
-
-
-
 
 class Player:
 	"""
@@ -73,8 +26,11 @@ class Player:
 		self.cell_type = cell_type
 		self.score = 0
 		self.position = "left"
-		self._player_widget = PlayerView(self, window)
+		#self._player_widget = PlayerView(self, window)
 
+	def win(self):
+		self.score +=1
+		return self.name, self.score
 
 class PlayerView():
 	"""
@@ -106,11 +62,12 @@ class PlayerView():
 class GameField:
 	def __init__(self, window, field_size=3):
 		self.field_size = field_size
-		self.cells = [[Cell.VOID] * self.field_size for i in range(self.field_size) ]
+		self.cells = [[Cell.VOID] * self.field_size for i in range(self.field_size) ] #list comprehension
 		self._field_widget = GameFieldView(self, window)
+		self._field_sum = 0 # for fill field check
 
 	def check_lines(self, current_value):
-		count_lines = self.field_size * 2 + 2 
+		count_lines = self.field_size * 2 + 2
 		lines = [current_value.value for i in range(count_lines)]
 		for i in range(self.field_size):
 			for j in range(self.field_size):
@@ -121,9 +78,10 @@ class GameField:
 		print(lines)		
 		for i in range(len(lines)):
 			if lines[i] != 0:
-				print(i)
 				self._field_widget.draw_finish_line(i)
 				return "done"
+		if self._field_sum == self.field_size ** 2:
+			return "draw"
 		return "change_player"
 
 
@@ -131,12 +89,14 @@ class GameField:
 		if self.cells[cell_i][cell_j] == Cell.VOID:
 			self.cells[cell_i][cell_j] = value
 			self._field_widget.draw_object_in(cell_i, cell_j)
+			self._field_sum += 1
 			return self.check_lines(value)
 		else: 
 			return False
 
-	def get_coords(self, pos, button):
-		return self._field_widget.get_coords(*pos, button)
+
+	def get_cell(self, position):
+		return self._field_widget.get_cell(*position)
 
 
 class GameFieldView:
@@ -154,7 +114,7 @@ class GameFieldView:
 		self.initial_draw()
 
 	def initial_draw(self):
-		self.cross_cell = pygame.Surface((CELL_SIZE-20, CELL_SIZE-20), pygame.SRCALPHA)
+		self.cross_cell = pygame.Surface((CELL_SIZE - (CELL_SIZE/5), CELL_SIZE - (CELL_SIZE/5)), pygame.SRCALPHA)
 		self.cross_cell.fill(COLOR_BLACK)
 		self.cross_cell.set_colorkey(COLOR_BLACK)
 		self.cell_rectangle = self.cross_cell.get_rect()
@@ -178,52 +138,55 @@ class GameFieldView:
 		value = self._field.cells[cell_i][cell_j]
 		if value != Cell.VOID:
 			self.cell_rectangle.center = ((cell_i+1)*CELL_SIZE - CELL_SIZE/2, (cell_j+1)*CELL_SIZE - CELL_SIZE/2)
-			print(self.cell_rectangle.center)
 		if value == Cell.CROSS:
 			self.fieldview.blit(self.cross_cell, self.cell_rectangle)
 		elif value == Cell.ZERO:
 			self.fieldview.blit(self.null_cell, self.cell_rectangle)
+		else:
+			return False
 		self.surface_to_draw.blit(self.fieldview , self.rectangle)
 
 
 	def draw_finish_line(self, line):
 		print ("finish line", line)
+		padding = 10
 		if line < self._field.field_size:
-			line_start = (line*CELL_SIZE + CELL_SIZE/2, 10)
-			line_stop = (line*CELL_SIZE + CELL_SIZE/2, self._width-10)
-			pass
+			line_start = (line*CELL_SIZE + CELL_SIZE/2, padding)
+			line_stop = (line*CELL_SIZE + CELL_SIZE/2, self._width - padding)
 		elif line >= self._field.field_size and line < self._field.field_size*2:
-			line_start = (10, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
-			line_stop = (self._width-10, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
-			pass
+			line_start = (padding, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
+			line_stop = (self._width - padding, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
 		elif line == self._field.field_size*2:
-			line_start = (10, 10)
-			line_stop = (self._width-10, self._width-10)
-			pass
+			line_start = (padding, padding)
+			line_stop = (self._width - padding, self._width - padding)
 		elif line == self._field.field_size*2 + 1:
-			line_start = (self._width-10, 10)
-			line_stop = (10, self._width-10)
-			pass
+			line_start = (self._width - padding, padding)
+			line_stop = (padding, self._width - padding)
 		else:
 			print("exeption")
 			return False
 		pygame.draw.line(self.fieldview, COLOR_WHITE, line_start, line_stop)
-		self.surface_to_draw.blit(self.fieldview , self.rectangle) 
+		self.surface_to_draw.blit(self.fieldview , self.rectangle)
+		self.state = "end_round"
 
 
-
-	def get_coords(self, x, y, button):
+	def get_cell(self, x, y):
 		# вернуть клетку в которую ткнули, если не попали, вернуть None
 		cell = [None, None]
-		if button == 1:
-			for i in range(self._field.field_size):
-				if x > self.rectangle.topleft[0] + i*CELL_SIZE and x < self.rectangle.topleft[0] + (i+1)*CELL_SIZE:
-					cell[0] = i
-		
-			for i in range(self._field.field_size):
-				if y > self.rectangle.topleft[1] + i*CELL_SIZE and y < self.rectangle.topleft[1] + (i+1)*CELL_SIZE:
-					cell[1] = i
+		for i in range(self._field.field_size):
+			if x > self.rectangle.topleft[0] + i*CELL_SIZE and x < self.rectangle.topleft[0] + (i+1)*CELL_SIZE:
+				cell[0] = i
+			if y > self.rectangle.topleft[1] + i*CELL_SIZE and y < self.rectangle.topleft[1] + (i+1)*CELL_SIZE:
+				cell[1] = i		
 		return tuple(cell)
+
+
+class GameManager:
+	def __init__(self, window):
+		pass
+
+	def handle(self, event):
+		return False
 
 
 class GameRoundManager:
@@ -237,33 +200,33 @@ class GameRoundManager:
 		self.field = GameField(window, 3)
 
 
-
 	def done(self):
-		#self._players[self.current_player].win()
+		self._players[self.current_player].win()
+		#TODO init form, block gamefield, handle form event - start new round or exit naher
 		pass
 
 
 	def change_player(self):
-		if self.current_player == 0:
-			self.current_player = 1
-		elif self.current_player == 1:
-			self.current_player = 0
+		#self._players[self.current_player].unset()
+		self.current_player = int(not self.current_player)
+		#self._players[self.current_player].set()
+
 
 	def handle(self, event):
 		if event.type == pygame.MOUSEBUTTONUP:
-			if self.handle_click(event.pos, event.button) == True:
-				#return self.end_round()
-				#return "end_round"
-				pass
+			if event.button == 1:
+				if self.handle_click(event.pos) == True:
+					#return self.end_round()
+					#return "end_round"
+					pass
 		return False
 
 
-	def handle_click(self, pos, button):
-		cell_i, cell_j = self.field.get_coords(pos, button)
-		if None in (cell_i, cell_j):
+	def handle_click(self, pos):
+		cell = self.field.get_cell(pos)
+		if None in cell:
 			return False
-		what_to_do = self.field.set_cell_value(cell_i, cell_j, self._players[self.current_player].cell_type)
-			#if self.field.check_lines(self._players[self.current_player].cell_type) != False:
+		what_to_do = self.field.set_cell_value(*cell, self._players[self.current_player].cell_type)
 		if what_to_do == "done":
 			self.done()
 			#return True
@@ -271,23 +234,33 @@ class GameRoundManager:
 			self.change_player()
 		return False
 
+
 class GameInitManager:
-	def __init__(self, window):
-		self._players = []
-		input_box1 = InputBox(100, 100, 140, 32)
-		input_box2 = InputBox(100, 300, 140, 32)
-		self.input_boxes = [input_box1, input_box2]
+	def __init__(self, players, window):
+		self._state = False
+		self._screen = window
 
-		#TODO: make procedure to fill input boxes and create players whit inputed names
+		self.new_player_form = forms.Form(window, name="players")
+		self.new_player_form.append_unit(forms.InputBox, 'input_player1', (300, 100), (140, 32), {'padding':5}, placeholder="Input name")
+		self.new_player_form.append_unit(forms.InputBox, 'input_player2', (300, 200), (140, 32), {'padding':5}, placeholder="Input name")
+		self.new_player_form.append_unit(forms.Button, 'start_button', (100, 300), (120, 0), {'padding':5, 'bg_color':COLOR_INACTIVE}, value="Start")
+		self.new_player_form.append_unit(forms.Button, 'quit_button', (300, 300), (120, 0), {'padding':5, 'bg_color':COLOR_INACTIVE}, value="Quit game")
+		self.new_player_form.append_unit(forms.Label, 'label1', (100,100), style={'padding':5}, value='Player 1 for X')
+		self.new_player_form.append_unit(forms.Label, 'label2', (100,200), style={'padding':5}, value='Player 2 for 0')
 
-
+		def create_user(players):
+			data = self.new_player_form.data_collect()
+			players[0] = Player(data['input_player1'], Cell.CROSS, self._screen)
+			players[1] = Player(data['input_player2'], Cell.ZERO, self._screen)
+			print("hello", players[0].name, players[1].name)
+			self._state = "init_round"
+		self.new_player_form.on("start_button", "click", create_user, (players))
+		self.new_player_form.on("quit_button", "click", pygame.event.post, (pygame.event.Event(pygame.QUIT)))
 
 	def handle(self, event):
-		for box in input_boxes:
-			box.handle_event(event)
-		for box in input_boxes:
-			box.update()
-			box.draw(self._screen)
+		self.new_player_form.handle(event)
+		return self._state
+	
 
 class MainWindow:
 	"""
@@ -296,36 +269,34 @@ class MainWindow:
 	def __init__(self):
 		self._size = 800,600
 		self._screen = pygame.display.set_mode(self._size)
+		self._screen.fill(0)
 		self._clock = pygame.time.Clock()
 		self._round_number = 0
+		self.players = [None, None]
 		pygame.init()
 		pygame.display.set_caption("Крестики-Нолики")
-		self.init_game()
+		self.router("init_game")
 
-	def change_state(self, state):
-		if state == "round":
-			self.init_round()
-		pass
-
-
-	def init_game(self):
-		self._init_manager = GameInitManager(self._screen)
-		self._handler = self._init_manager
-		self.players = Player("Piter",Cell.CROSS, self._screen), Player("Vasian",Cell.ZERO, self._screen)
-		self.init_round()
-
-
-	def init_round(self):
-
-		self._round_number += 1
-		self._game_manager = GameRoundManager(self.players, self._screen)
-		self._handler = self._game_manager
-		pass
+	def router(self, state):
+		if state == "init_game":
+			self._handler = GameInitManager(self.players, self._screen)
+		elif state == "init_round":
+			self._round_number += 1
+			self._handler  = GameRoundManager(self.players, self._screen)
+		elif state == "end_round":
+			self.end_round()
+		else:
+			return False
 
 
 	def end_round(self):
 		pass
 
+
+	def handle(self, event):
+		state = self._handler.handle(event)
+		if state != False:
+			self.router(state)
 
 	def main_loop(self, tick):
 		quit = False
@@ -334,10 +305,8 @@ class MainWindow:
 			for event in pygame.event.get():
 				if event.type == pygame.QUIT:
 					quit = True
-				else:
-					state = self._handler.handle(event)
-					if state != False:
-						self.change_state(state)
+				elif event.type in (pygame.KEYDOWN, pygame.KEYUP, pygame.MOUSEMOTION, pygame.MOUSEBUTTONUP, pygame.MOUSEBUTTONDOWN):
+					self.handle(event)
 			pygame.display.flip()				
 
 
