@@ -7,9 +7,23 @@ FPS = 30
 COLOR_WHITE = 255, 255, 255
 COLOR_BLACK = 0, 0, 0
 FIELD_COLOR = 250, 10, 10
-COLOR_KEY = 0, 0, 0
 COLOR_INACTIVE = pygame.Color('lightskyblue3')
 COLOR_ACTIVE = pygame.Color('dodgerblue2')
+
+
+def draw_cross_zero(cell_type) -> pygame.Surface:
+	cell = pygame.Surface((CELL_SIZE - (CELL_SIZE/5), CELL_SIZE - (CELL_SIZE/5)), pygame.SRCALPHA)
+	cell.fill(COLOR_BLACK)
+	cell.set_colorkey(COLOR_BLACK)
+	cell_rectangle = cell.get_rect()
+	if cell_type == Cell.CROSS:
+		pygame.draw.line(cell, COLOR_WHITE, (0, 0), (cell_rectangle.width, cell_rectangle.height), width=2)
+		pygame.draw.line(cell, COLOR_WHITE, (0, cell_rectangle.height), (cell_rectangle.width, 0), width=2)
+	elif cell_type == Cell.ZERO:
+		pygame.draw.circle(cell, COLOR_WHITE, (cell_rectangle.width/2, cell_rectangle.height/2), (cell_rectangle.height/2), width=2)
+	else:
+		return False
+	return cell
 
 
 class Cell(Enum):
@@ -21,16 +35,21 @@ class Player:
 	"""
 	Class of gambleman
 	"""
-	def __init__(self, name, cell_type, window):
+	def __init__(self, name, cell_type, surface_to_draw):
 		self.name = name
 		self.cell_type = cell_type
 		self.score = 0
-		self.position = "left"
-		#self._player_widget = PlayerView(self, window)
+		self._player_widget = PlayerView(self, surface_to_draw)
+		self._turn = 0
 
 	def win(self):
 		self.score +=1
 		return self.name, self.score
+
+	def set(self, turn):
+		self._turn = turn
+		self._player_widget.draw()
+
 
 class PlayerView():
 	"""
@@ -43,18 +62,35 @@ class PlayerView():
 		self._window_size = surface_to_draw.get_width(), surface_to_draw.get_height()
 		self._height = 400#self._field.field_size * CELL_SIZE
 		self._width = 200#self._field.field_size * CELL_SIZE
-
+		self.bg_color = (100,100,255)
 		self.initial_draw()
 
 	def initial_draw(self):
-		self.playerview = pygame.Surface((self._width, self._height), pygame.SRCALPHA)  
-		self.playerview.fill(FIELD_COLOR)  # fill the rectangle / surface with specified color
+		self.playerview = pygame.Surface((self._width, self._height), pygame.SRCALPHA)
+		self.playerview.fill(self.bg_color)  # fill the rectangle / surface with specified color
 		self.playerview.set_colorkey(COLOR_BLACK)  
 		self.rectangle = self.playerview.get_rect()  # define rect for placing the rectangle at the desired position
-		if self._player.position == "left":
+		if self._player.cell_type == Cell.CROSS:
 			self.rectangle.topleft = (10, 10)
+			self.cell = draw_cross_zero(Cell.CROSS)
 		else:
 			self.rectangle.topright = (self._window_size[0] - 10, 10)
+			self.cell = draw_cross_zero(Cell.ZERO)
+		self.cell_rectangle = self.cell.get_rect()
+		self.playerview.blit(self.cell, (10,10))
+
+		self.font = pygame.font.Font(None, 32)
+		self.txt_surface = self.font.render(self._player.name, True, COLOR_WHITE)
+		self.playerview.blit(self.txt_surface, (10 + CELL_SIZE, 10 + CELL_SIZE/2 - 16))
+
+	def draw(self):
+		if self._player._turn:
+			pygame.draw.rect(self.playerview, COLOR_WHITE, (0,0, self.rectangle.w-2, self.rectangle.h-2), 4)
+		else:
+			pygame.draw.rect(self.playerview, self.bg_color, (0,0, self.rectangle.w-2, self.rectangle.h-2), 4)
+
+
+
 		self.surface_to_draw.blit(self.playerview , self.rectangle)
 
 
@@ -74,8 +110,7 @@ class GameField:
 				lines[i] = lines[i] & self.cells[i][j].value
 				lines[self.field_size + j] = lines[self.field_size + j] & self.cells[i][j].value
 			lines[count_lines - 2] = lines[count_lines - 2] & self.cells[i][i].value
-			lines[count_lines - 1] = lines[count_lines - 1] & self.cells[self.field_size-i-1][i].value
-		print(lines)		
+			lines[count_lines - 1] = lines[count_lines - 1] & self.cells[self.field_size-i-1][i].value		
 		for i in range(len(lines)):
 			if lines[i] != 0:
 				self._field_widget.draw_finish_line(i)
@@ -83,7 +118,6 @@ class GameField:
 		if self._field_sum == self.field_size ** 2:
 			return "draw"
 		return "change_player"
-
 
 	def set_cell_value(self, cell_i, cell_j, value):
 		if self.cells[cell_i][cell_j] == Cell.VOID:
@@ -93,7 +127,6 @@ class GameField:
 			return self.check_lines(value)
 		else: 
 			return False
-
 
 	def get_cell(self, position):
 		return self._field_widget.get_cell(*position)
@@ -114,14 +147,9 @@ class GameFieldView:
 		self.initial_draw()
 
 	def initial_draw(self):
-		self.cross_cell = pygame.Surface((CELL_SIZE - (CELL_SIZE/5), CELL_SIZE - (CELL_SIZE/5)), pygame.SRCALPHA)
-		self.cross_cell.fill(COLOR_BLACK)
-		self.cross_cell.set_colorkey(COLOR_BLACK)
+		self.cross_cell = draw_cross_zero(Cell.CROSS)
+		self.null_cell = draw_cross_zero(Cell.ZERO)
 		self.cell_rectangle = self.cross_cell.get_rect()
-		self.null_cell = self.cross_cell.copy()
-		pygame.draw.line(self.cross_cell, COLOR_WHITE, (0, 0), (self.cell_rectangle.width, self.cell_rectangle.height))
-		pygame.draw.line(self.cross_cell, COLOR_WHITE, (0, self.cell_rectangle.height), (self.cell_rectangle.width, 0))
-		pygame.draw.circle(self.null_cell, COLOR_WHITE, self.cell_rectangle.center, (self.cell_rectangle.height/2))
 
 		self.fieldview = pygame.Surface((self._height , self._width), pygame.SRCALPHA)  
 		self.fieldview.fill(FIELD_COLOR)  # fill the rectangle / surface with specified color
@@ -148,8 +176,7 @@ class GameFieldView:
 
 
 	def draw_finish_line(self, line):
-		print ("finish line", line)
-		padding = 10
+		padding = 5
 		if line < self._field.field_size:
 			line_start = (line*CELL_SIZE + CELL_SIZE/2, padding)
 			line_stop = (line*CELL_SIZE + CELL_SIZE/2, self._width - padding)
@@ -165,9 +192,8 @@ class GameFieldView:
 		else:
 			print("exeption")
 			return False
-		pygame.draw.line(self.fieldview, COLOR_WHITE, line_start, line_stop)
+		pygame.draw.line(self.fieldview, (150,150,150), line_start, line_stop, width=8)
 		self.surface_to_draw.blit(self.fieldview , self.rectangle)
-		self.state = "end_round"
 
 
 	def get_cell(self, x, y):
@@ -181,56 +207,48 @@ class GameFieldView:
 		return tuple(cell)
 
 
-class GameManager:
-	def __init__(self, window):
-		pass
-
-	def handle(self, event):
-		return False
-
-
 class GameRoundManager:
 	"""
 	game manager, run everyone
 	"""
-	def __init__(self, players: Player, window):
+	def __init__(self, players: Player, field_size, window):
+		self._state = False
 		self._players = players
 		self.current_player = 0
 		window.fill(COLOR_BLACK)
-		self.field = GameField(window, 3)
-
-
-	def done(self):
-		self._players[self.current_player].win()
-		#TODO init form, block gamefield, handle form event - start new round or exit naher
-		pass
-
+		self.field = GameField(window, field_size)
+		self._players[self.current_player].set(True)
+		self._players[int(not self.current_player)].set(False)
 
 	def change_player(self):
-		#self._players[self.current_player].unset()
+		self._players[self.current_player].set(False)
 		self.current_player = int(not self.current_player)
-		#self._players[self.current_player].set()
+		self._players[self.current_player].set(True)
 
+	def get_winner(self):
+		if self._state == "done":
+			return self.current_player
+		else:
+			return None
 
 	def handle(self, event):
 		if event.type == pygame.MOUSEBUTTONUP:
 			if event.button == 1:
 				if self.handle_click(event.pos) == True:
-					#return self.end_round()
-					#return "end_round"
+					return "end_round"
 					pass
 		return False
-
 
 	def handle_click(self, pos):
 		cell = self.field.get_cell(pos)
 		if None in cell:
 			return False
-		what_to_do = self.field.set_cell_value(*cell, self._players[self.current_player].cell_type)
-		if what_to_do == "done":
-			self.done()
-			#return True
-		elif what_to_do == "change_player":
+		self._state = self.field.set_cell_value(*cell, self._players[self.current_player].cell_type)
+		if self._state == "done":
+			self._players[self.current_player].win()
+		if self._state == "done" or self._state == "draw":
+			return True
+		elif self._state == "change_player":
 			self.change_player()
 		return False
 
@@ -239,28 +257,86 @@ class GameInitManager:
 	def __init__(self, players, window):
 		self._state = False
 		self._screen = window
+		self.field_size = 3
 
 		self.new_player_form = forms.Form(window, name="players")
-		self.new_player_form.append_unit(forms.InputBox, 'input_player1', (300, 100), (140, 32), {'padding':5}, placeholder="Input name")
-		self.new_player_form.append_unit(forms.InputBox, 'input_player2', (300, 200), (140, 32), {'padding':5}, placeholder="Input name")
-		self.new_player_form.append_unit(forms.Button, 'start_button', (100, 300), (120, 0), {'padding':5, 'bg_color':COLOR_INACTIVE}, value="Start")
-		self.new_player_form.append_unit(forms.Button, 'quit_button', (300, 300), (120, 0), {'padding':5, 'bg_color':COLOR_INACTIVE}, value="Quit game")
+		self.new_player_form.append_unit(forms.InputBox, 'input_player1', (260, 100), size=(200, 32), style={'padding':5}, placeholder="Input name")
+		self.new_player_form.append_unit(forms.InputBox, 'input_player2', (260, 150), size=(200, 32), style={'padding':5}, placeholder="Input name")
+		self.new_player_form.append_unit(forms.Button, 'start_button', (100, 300), size=(120, 0), style={'padding':5, 'bg_color':COLOR_INACTIVE}, value="Start")
+		self.new_player_form.append_unit(forms.Button, 'quit_button', (300, 300), size=(120, 0), style={'padding':5, 'bg_color':COLOR_INACTIVE}, value="Quit game")
 		self.new_player_form.append_unit(forms.Label, 'label1', (100,100), style={'padding':5}, value='Player 1 for X')
-		self.new_player_form.append_unit(forms.Label, 'label2', (100,200), style={'padding':5}, value='Player 2 for 0')
+		self.new_player_form.append_unit(forms.Label, 'label2', (100,150), style={'padding':5}, value='Player 2 for 0')
+		self.new_player_form.append_unit(forms.RadioGroup, 'radio')
+		self.new_player_form.get_unit('radio').append_unit('radio1', (260,208), checked=True, value=3)
+		self.new_player_form.get_unit('radio').append_unit('radio2', (360,208), value=4)
+		self.new_player_form.get_unit('radio').append_unit('radio3', (460,208), checked=False, value=5)
+		self.new_player_form.append_unit(forms.Label, 'fielsize', (100,200), style={'padding':5}, value='Field size:')
+		self.new_player_form.append_unit(forms.Label, 'radio3x3', (280,200), style={'padding':5}, value='3x3')
+		self.new_player_form.append_unit(forms.Label, 'radio4x4', (380,200), style={'padding':5}, value='4x4')
+		self.new_player_form.append_unit(forms.Label, 'radio5x5', (480,200), style={'padding':5}, value='5x5')
 
-		def create_user(players):
+
+
+
+		@self.new_player_form.bind('start_button', 'click', players)
+		def create_user(players): #TODO add this
 			data = self.new_player_form.data_collect()
-			players[0] = Player(data['input_player1'], Cell.CROSS, self._screen)
-			players[1] = Player(data['input_player2'], Cell.ZERO, self._screen)
-			print("hello", players[0].name, players[1].name)
-			self._state = "init_round"
-		self.new_player_form.on("start_button", "click", create_user, (players))
-		self.new_player_form.on("quit_button", "click", pygame.event.post, (pygame.event.Event(pygame.QUIT)))
+			print (data['radio'])
+			if len(data['input_player1']) > 2 and len(data['input_player2']) > 2:
+				players[0] = Player(data['input_player1'], Cell.CROSS, self._screen)
+				players[1] = Player(data['input_player2'], Cell.ZERO, self._screen)
+				print("hello", players[0].name, players[1].name)
+				self._state = "init_round"
+				self.field_size = data['radio']
+				return "init_round"
+			else:
+				self.new_player_form.append_unit(forms.Label, 'error_message', (100,250), style={'padding':5,'text_color':(255,0,0),}, value='Input Player names')
+				pass
 
-	def handle(self, event):
+		@self.new_player_form.bind(('input_player1', 'input_player2'), 'blur', this=True)
+		def check_form(this=True): #TODO add this
+			if len(this.value) < 3:
+				this.set_style({'border_color':(255, 0, 0)})
+			else:
+				this.set_style({'border_color':(255, 255, 255)})
+
+		@self.new_player_form.bind(('input_player1', 'input_player2'), 'focus')
+		def reset_error_message():
+			self.new_player_form.delete_unit('error_message')
+
+		self.new_player_form.on("quit_button", "click", pygame.event.post, (pygame.event.Event(pygame.QUIT)))
+		
+	def handle(self, event): 
 		self.new_player_form.handle(event)
 		return self._state
 	
+
+class EndRoundManager:
+	def __init__(self, players, winner, window):
+		self._state = False
+		self._screen = window
+		if winner != None:
+			label = "Game over! " + players[winner].name + " Win!"
+		else:
+			label = "Draw game!"
+
+		self.end_round_form = forms.Form(window, name="endround")
+		self.end_round_form.append_unit(forms.Button, 'start_button', (100, 500), size=(120, 0), style={'padding':5, 'bg_color':COLOR_INACTIVE}, value="Restart")
+		self.end_round_form.append_unit(forms.Button, 'quit_button', (300, 500), size=(120, 0), style={'padding':5, 'bg_color':COLOR_INACTIVE}, value="Quit game")
+		self.end_round_form.append_unit(forms.Label, 'label1', (100,450), style={'padding':5}, value=label)
+
+		@self.end_round_form.bind('start_button', 'click', )
+		def restart():
+			self._state = "init_round"
+			return "init_round"
+
+		self.end_round_form.on("quit_button", "click", pygame.event.post, (pygame.event.Event(pygame.QUIT)))
+		
+	def handle(self, event): 
+		self.end_round_form.handle(event)
+		return self._state
+
+
 
 class MainWindow:
 	"""
@@ -272,6 +348,7 @@ class MainWindow:
 		self._screen.fill(0)
 		self._clock = pygame.time.Clock()
 		self._round_number = 0
+		self.field_size = int()
 		self.players = [None, None]
 		pygame.init()
 		pygame.display.set_caption("Крестики-Нолики")
@@ -281,17 +358,16 @@ class MainWindow:
 		if state == "init_game":
 			self._handler = GameInitManager(self.players, self._screen)
 		elif state == "init_round":
+			if type(self._handler) == GameInitManager: #duct tape
+				self.field_size = self._handler.field_size
 			self._round_number += 1
-			self._handler  = GameRoundManager(self.players, self._screen)
+			print(self.field_size)
+			self._handler = GameRoundManager(self.players, self.field_size, self._screen)
 		elif state == "end_round":
-			self.end_round()
+			winner = self._handler.get_winner()
+			self._handler = EndRoundManager(self.players, winner, self._screen)
 		else:
 			return False
-
-
-	def end_round(self):
-		pass
-
 
 	def handle(self, event):
 		state = self._handler.handle(event)
