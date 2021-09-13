@@ -2,7 +2,6 @@ from enum import Enum
 import pygame
 import forms
 
-CELL_SIZE = 100
 FIELD_GEOMETRIC_SIZE = 300
 FPS = 30
 COLOR_WHITE = 255, 255, 255
@@ -54,16 +53,16 @@ class Player:
 
 class PlayerView():
 	"""
-	Виджет игроков. Отображает состояние игроков на экране. 
-	показывает чей сейчас ход
+	Player widget. Show player state on window. 
+	Shows whose turn it is.
 	"""
 	def __init__(self, player_to_observe, surface_to_draw):
 		self._player = player_to_observe
 		self.surface_to_draw = surface_to_draw
 		self._window_size = surface_to_draw.get_width(), surface_to_draw.get_height()
-		self._height = 400#self._field.field_size * CELL_SIZE
-		self._width = 200#self._field.field_size * CELL_SIZE
-		self.bg_color = (100,100,255)
+		self._height = 400
+		self._width = 200
+		self.bg_color = (100,100,100)
 		self.initial_draw()
 
 	def initial_draw(self):
@@ -78,11 +77,11 @@ class PlayerView():
 			self.rectangle.topright = (self._window_size[0] - 10, 10)
 			self.cell = draw_cross_zero(Cell.ZERO, 50)
 		self.cell_rectangle = self.cell.get_rect()
-		self.playerview.blit(self.cell, (10,10))
+		self.playerview.blit(self.cell, (10, 10))
 
 		self.font = pygame.font.Font(None, 32)
 		self.txt_surface = self.font.render(self._player.name, True, COLOR_WHITE)
-		self.playerview.blit(self.txt_surface, (10 + CELL_SIZE, 10 + CELL_SIZE/2 - 16))
+		self.playerview.blit(self.txt_surface, (60, 10))
 
 	def draw(self):
 		if self._player._turn:
@@ -137,8 +136,8 @@ class GameFieldView:
 	def __init__(self, field_to_observe, surface_to_draw):
 		# show field,
 		self._field = field_to_observe
-		self._height = FIELD_GEOMETRIC_SIZE #self._field.field_size * CELL_SIZE
-		self._width = FIELD_GEOMETRIC_SIZE #self._field.field_size * CELL_SIZE
+		self._height = FIELD_GEOMETRIC_SIZE
+		self._width = FIELD_GEOMETRIC_SIZE 
 		self._cell_size = int(FIELD_GEOMETRIC_SIZE / self._field.field_size)
 		self.surface_to_draw = surface_to_draw
 		self._window_size = surface_to_draw.get_width(), surface_to_draw.get_height()
@@ -177,11 +176,11 @@ class GameFieldView:
 	def draw_finish_line(self, line):
 		padding = 5
 		if line < self._field.field_size:
-			line_start = (line*CELL_SIZE + CELL_SIZE/2, padding)
-			line_stop = (line*CELL_SIZE + CELL_SIZE/2, self._width - padding)
+			line_start = (line*self._cell_size + self._cell_size/2, padding)
+			line_stop = (line*self._cell_size + self._cell_size/2, self._width - padding)
 		elif line >= self._field.field_size and line < self._field.field_size*2:
-			line_start = (padding, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
-			line_stop = (self._width - padding, (line - self._field.field_size)*CELL_SIZE + CELL_SIZE/2)
+			line_start = (padding, (line - self._field.field_size)*self._cell_size + self._cell_size/2)
+			line_stop = (self._width - padding, (line - self._field.field_size)*self._cell_size + self._cell_size/2)
 		elif line == self._field.field_size*2:
 			line_start = (padding, padding)
 			line_stop = (self._width - padding, self._width - padding)
@@ -199,9 +198,9 @@ class GameFieldView:
 		# return clicked cell, if miss, return None
 		cell = [None, None]
 		for i in range(self._field.field_size):
-			if x > self.rectangle.topleft[0] + i*CELL_SIZE and x < self.rectangle.topleft[0] + (i+1)*CELL_SIZE:
+			if x > self.rectangle.topleft[0] + i*self._cell_size and x < self.rectangle.topleft[0] + (i+1)*self._cell_size:
 				cell[0] = i
-			if y > self.rectangle.topleft[1] + i*CELL_SIZE and y < self.rectangle.topleft[1] + (i+1)*CELL_SIZE:
+			if y > self.rectangle.topleft[1] + i*self._cell_size and y < self.rectangle.topleft[1] + (i+1)*self._cell_size:
 				cell[1] = i		
 		return tuple(cell)
 
@@ -235,7 +234,6 @@ class GameRoundManager:
 			if event.button == 1:
 				if self.handle_click(event.pos) == True:
 					return "end_round"
-					pass
 		return False
 
 	def handle_click(self, pos):
