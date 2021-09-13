@@ -274,7 +274,7 @@ class GameInitManager:
 
 
 		@self.new_player_form.bind('start_button', 'click', players)
-		def create_user(players): #TODO add this
+		def create_user(players):
 			data = self.new_player_form.data_collect()
 			print (data['radio'])
 			if len(data['input_player1']) > 2 and len(data['input_player2']) > 2:
@@ -286,10 +286,9 @@ class GameInitManager:
 				return "init_round"
 			else:
 				self.new_player_form.append_unit(forms.Label, 'error_message', (100,250), style={'padding':5,'text_color':(255,0,0),}, value='Input Player names')
-				pass
 
 		@self.new_player_form.bind(('input_player1', 'input_player2'), 'blur', this=True)
-		def check_form(this=True): #TODO add this
+		def check_form(this=True):
 			if len(this.value) < 3:
 				this.set_style({'border_color':(255, 0, 0)})
 			else:

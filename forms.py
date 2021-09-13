@@ -142,6 +142,9 @@ class Input:
 		self.rectangle.topleft = position
 		#self.draw()
 
+	def set_style(self, style):
+		self.style.update(style)
+
 	def clear(self):
 		self.surface.fill(COLOR_KEY) 
 		self.surface_to_draw.blit(self.surface, self.rectangle)
@@ -184,20 +187,18 @@ class Input:
 		self.callback[event] = fn
 		self.callback_args[event] = args
 		self.callback_kwargs[event] = kwargs
+
 		"""
 		mousemove, wheel, change, input (для текстовых элементов формы), select, submit
 		"""
-	def set_style(self, style):
-		self.style.update(style)
-
 	def click(self, mousebutton):
-		#there maybe another code
+		#here maybe another code
 		view_function = self.callback.get("click")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("click"), **self.callback_kwargs.get("click"))
 
 	def mousedown(self, mousebutton):
-		#there maybe another code
+		#here maybe another code
 		self.downed = True
 		if not self.focused:
 			self.focus()
@@ -206,21 +207,21 @@ class Input:
 			return view_function(*self.callback_args.get("mousedown"), **self.callback_kwargs.get("mousedown"))
 
 	def mouseup(self, mousebutton):
-		#there maybe another code
+		#here maybe another code
 		self.downed = False
 		view_function = self.callback.get("mouseup")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("mouseup"), **self.callback_kwargs.get("mouseup"))
 
 	def mousein(self):
-		#there maybe another code
+		#here maybe another code
 		self.hovered = True
 		view_function = self.callback.get("mousein")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("mousein"), **self.callback_kwargs.get("mousein"))
 
 	def mouseout(self):
-		#there maybe another code
+		#here maybe another code
 		self.hovered = False
 		self.downed = False
 		view_function = self.callback.get("mouseout")
@@ -228,26 +229,26 @@ class Input:
 			return view_function(*self.callback_args.get("mouseout"), **self.callback_kwargs.get("mouseout"))
 
 	def keydown(self, key, unicode):
-		#there maybe another code
+		#here maybe another code
 		view_function = self.callback.get("keydown")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("keydown"), **self.callback_kwargs.get("keydown"))
 
-	def keyup(self):
-		#there maybe another code
+	def keyup(self, key):
+		#here maybe another code
 		view_function = self.callback.get("keyup")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("keyup"), **self.callback_kwargs.get("keyup"))
 
 	def focus(self):
-		#there maybe another code
+		#here maybe another code
 		self.focused = True
 		view_function = self.callback.get("focus")
 		if view_function and callable(view_function):
 			return view_function(*self.callback_args.get("focus"), **self.callback_kwargs.get("focus"))
 
 	def blur(self):
-		#there maybe another code
+		#here maybe another code
 		self.focused = False
 		self.downed = False
 		view_function = self.callback.get("blur")
@@ -299,6 +300,7 @@ class InputBox(Input):
 		self.draw()
 
 	def keydown(self, key, unicode): # Re-render the text.
+		super().keydown(key, unicode)
 		if key == pygame.K_RETURN:
 			self.blur()
 		elif key == pygame.K_BACKSPACE:
@@ -306,9 +308,8 @@ class InputBox(Input):
 		else:
 			self.value += unicode
 		self.txt_surface = self.font.render(self.value, True, self.style['text_color'])
-		super().keydown(key, unicode)
 
-	def update(self):
+	def update(self): # need refactoring
 		# Resize the box if the text is too long.
 		width = max(200, self.txt_surface.get_width()+10)
 		self.rectangle.w = width
