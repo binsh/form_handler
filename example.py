@@ -1,16 +1,3 @@
-# PyGame Forms
-
-version 0.0001  
-
-## What is it?
-
-Form handler based on PyGame shapes and evens.
-
-## How
-### Install pygame  
-python3 -m pip install -U pygame --user  
-
-'''
 import pygame
 import forms
 
@@ -77,9 +64,3 @@ def main():
 
 if __name__ == '__main__':
 	main()  
-'''
-
-## Example
-
-python crosszero.py (or python3 crosszero.py)  
-python example.py (or python3 example.py)  

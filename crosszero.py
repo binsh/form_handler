@@ -271,11 +271,12 @@ class GameInitManager:
 		self.new_player_form.append_unit(forms.Label, 'radio3x3', (280,200), style={'padding':5}, value='3x3')
 		self.new_player_form.append_unit(forms.Label, 'radio4x4', (380,200), style={'padding':5}, value='4x4')
 		self.new_player_form.append_unit(forms.Label, 'radio5x5', (480,200), style={'padding':5}, value='5x5')
+		self.new_player_form.append_unit(forms.CheckBox, 'checkbox', (480,108))
+		self.new_player_form.append_unit(forms.Label, 'forchekbox', (500,100), style={'padding':5}, value='Some checkbox')
 
 		@self.new_player_form.bind('start_button', 'click', players)
 		def create_user(players):
 			data = self.new_player_form.data_collect()
-			print (data['radio'])
 			if len(data['input_player1']) > 2 and len(data['input_player2']) > 2:
 				players[0] = Player(data['input_player1'], Cell.CROSS, self._screen)
 				players[1] = Player(data['input_player2'], Cell.ZERO, self._screen)
