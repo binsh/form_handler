@@ -7,9 +7,8 @@ COLOR_INACTIVE = pygame.Color('lightskyblue3')
 COLOR_ACTIVE = pygame.Color('dodgerblue2')
 
 #default style
-STYLE = {'padding':0, 'margin':0, 'border':0,'border_color':(255,255,255), 'bg_color':None, 'text_color':(255,255,255), 'text_align':'left', 'font':None, 'font_size':32}
 #if font not none, place font to programm folder or set full font path like /usr/share/fonts/truetype/msttcorefonts/Arial.ttf 
-
+STYLE = {'padding':0, 'margin':0, 'border':0,'border_color':(255,255,255), 'bg_color':None, 'text_color':(255,255,255), 'text_align':'left', 'font':None, 'font_size':32}
 
 
 class Form: #shapeless conteiner
@@ -91,7 +90,6 @@ class RadioGroup(Form):
 		if 'checked' in kwargs and kwargs['checked']:
 			self.recheck(unit_name)
 
-
 	def get_value(self):
 		return self.data_collect()
 
@@ -110,7 +108,6 @@ class RadioGroup(Form):
 		for name, unit in self._units.items():
 			if name != unit_name:
 				unit.uncheck()
-
 
 	def handle(self, event):
 		super().handle(event)
@@ -149,7 +146,6 @@ class Input:
 		self.surface.fill(COLOR_KEY) 
 		self.surface_to_draw.blit(self.surface, self.rectangle)
 
-
 	def handle(self, event):
 		response = False
 		if event.type == pygame.MOUSEBUTTONDOWN:
@@ -175,6 +171,12 @@ class Input:
 
 	def get_value(self):
 		return self.value
+
+	def bind(self, unit_name, event, *args, **kwargs):
+		def decorator(fn):
+			self.on(event, fn, *args, **kwargs)
+			return fn
+		return decorator
 
 	def on(self, event, fn, *args, **kwargs):
 		if 'this' in kwargs:
@@ -369,6 +371,61 @@ class RadioButton(Input):
 
 		if self._checked:
 			pygame.draw.circle(self.surface, border_color, (self.rectangle.width/2, self.rectangle.height/2), (self.rectangle.height/2 - self.style['border']*2) )
+		self.surface_to_draw.blit(self.surface, self.rectangle)
+
+
+class CheckBox(Input):
+	def __init__(self, surface_to_draw, position=(0,0), size=16, style={}, value='', checked=False):
+		self.default_style = {'border':1, 'border_color':COLOR_INACTIVE, 'border_color_actve':COLOR_ACTIVE}
+		super().__init__(surface_to_draw, position, (size, size), style, value)
+		self._checked = checked
+		check_size = size - (self.style['border']*4)
+		self.check_surface = pygame.Surface((check_size, check_size))
+		self.check_surface.set_colorkey(COLOR_KEY) #fill issue
+		pygame.draw.line(self.check_surface, COLOR_WHITE, (0, int(check_size-check_size/3-2)), (int(check_size/3), check_size-2), width=2)
+		pygame.draw.line(self.check_surface, COLOR_WHITE, (int(check_size/3), check_size-2), (check_size, int(check_size/3-2)), width=2)
+		self.check_rectangle = self.check_surface.get_rect()
+		self.check_rectangle.center = (size/2, size/2)
+		self.draw()
+
+	def get_value(self):
+		return self._checked
+
+	def mouseup(self, mousebutton):
+		super().mouseup(mousebutton)
+		self._checked = not self._checked 
+		return 'checked'
+
+	def draw(self):
+		# Fill background
+		if 'bg_color_active' in self.style.keys() and self.downed:
+			bg_color = self.style['bg_color_active']
+		elif 'bg_color_hover' in self.style.keys() and self.hovered:
+			bg_color = self.style['bg_color_hover']
+		elif 'bg_color_focused' in self.style.keys() and self.focused:
+			bg_color = self.style['bg_color_focused']
+		else:
+			bg_color = self.style['bg_color']
+		if bg_color != None:
+			self.surface.fill(bg_color)
+		else:
+			self.surface.fill(COLOR_KEY) 
+
+		if self._checked:
+			pygame.draw.rect(self.surface, self.style['border_color_actve'], (0,0, self.rectangle.w, self.rectangle.h))
+			self.surface.blit(self.check_surface, self.check_rectangle)
+		else:
+			# Blit the border.
+			if self.style['border'] > 0:
+				if 'border_color_actve' in self.style.keys() and self.downed:
+					border_color = self.style['border_color_actve']
+				elif 'border_color_hover' in self.style.keys() and self.hovered:
+					border_color = self.style['border_color_hover']
+				elif 'border_color_focus' in self.style.keys() and self.focused:
+					border_color = self.style['border_color_focus']
+				else:
+					border_color = self.style['border_color']
+				pygame.draw.rect(self.surface, border_color, (0,0, self.rectangle.w, self.rectangle.h), self.style['border'])
 		self.surface_to_draw.blit(self.surface, self.rectangle)
 
 

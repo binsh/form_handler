@@ -88,11 +88,7 @@ class PlayerView():
 			pygame.draw.rect(self.playerview, COLOR_WHITE, (0,0, self.rectangle.w-2, self.rectangle.h-2), 4)
 		else:
 			pygame.draw.rect(self.playerview, self.bg_color, (0,0, self.rectangle.w-2, self.rectangle.h-2), 4)
-
-
-
 		self.surface_to_draw.blit(self.playerview , self.rectangle)
-
 
 
 class GameField:
@@ -274,8 +270,7 @@ class GameInitManager:
 		self.new_player_form.append_unit(forms.Label, 'radio3x3', (280,200), style={'padding':5}, value='3x3')
 		self.new_player_form.append_unit(forms.Label, 'radio4x4', (380,200), style={'padding':5}, value='4x4')
 		self.new_player_form.append_unit(forms.Label, 'radio5x5', (480,200), style={'padding':5}, value='5x5')
-
-
+		#self.new_player_form.append_unit(forms.CheckBox, 'check', (100,350))
 
 
 		@self.new_player_form.bind('start_button', 'click', players)
@@ -337,7 +332,6 @@ class EndRoundManager:
 		return self._state
 
 
-
 class MainWindow:
 	"""
 	Contain field view, and recive event
@@ -393,5 +387,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
-
 
