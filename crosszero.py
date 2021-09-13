@@ -3,6 +3,7 @@ import pygame
 import forms
 
 CELL_SIZE = 100
+FIELD_GEOMETRIC_SIZE = 300
 FPS = 30
 COLOR_WHITE = 255, 255, 255
 COLOR_BLACK = 0, 0, 0
@@ -11,8 +12,8 @@ COLOR_INACTIVE = pygame.Color('lightskyblue3')
 COLOR_ACTIVE = pygame.Color('dodgerblue2')
 
 
-def draw_cross_zero(cell_type) -> pygame.Surface:
-	cell = pygame.Surface((CELL_SIZE - (CELL_SIZE/5), CELL_SIZE - (CELL_SIZE/5)), pygame.SRCALPHA)
+def draw_cross_zero(cell_type, cell_size) -> pygame.Surface:
+	cell = pygame.Surface((cell_size - (cell_size/5), cell_size - (cell_size/5)), pygame.SRCALPHA)
 	cell.fill(COLOR_BLACK)
 	cell.set_colorkey(COLOR_BLACK)
 	cell_rectangle = cell.get_rect()
@@ -72,10 +73,10 @@ class PlayerView():
 		self.rectangle = self.playerview.get_rect()  # define rect for placing the rectangle at the desired position
 		if self._player.cell_type == Cell.CROSS:
 			self.rectangle.topleft = (10, 10)
-			self.cell = draw_cross_zero(Cell.CROSS)
+			self.cell = draw_cross_zero(Cell.CROSS, 50)
 		else:
 			self.rectangle.topright = (self._window_size[0] - 10, 10)
-			self.cell = draw_cross_zero(Cell.ZERO)
+			self.cell = draw_cross_zero(Cell.ZERO, 50)
 		self.cell_rectangle = self.cell.get_rect()
 		self.playerview.blit(self.cell, (10,10))
 
@@ -130,28 +131,30 @@ class GameField:
 
 class GameFieldView:
 	"""
-	Виджет игрового поля. Отображает поле на экране. 
-	Определяет клетку в которую кликнули
+	Gamefield winget. Show field on screen. 
+	Track clicked cell
 	"""
 	def __init__(self, field_to_observe, surface_to_draw):
-		# отобразить поле, загрузть картинки клеток
+		# show field,
 		self._field = field_to_observe
-		self._height = self._field.field_size * CELL_SIZE
-		self._width = self._field.field_size * CELL_SIZE
+		self._height = FIELD_GEOMETRIC_SIZE #self._field.field_size * CELL_SIZE
+		self._width = FIELD_GEOMETRIC_SIZE #self._field.field_size * CELL_SIZE
+		self._cell_size = int(FIELD_GEOMETRIC_SIZE / self._field.field_size)
 		self.surface_to_draw = surface_to_draw
 		self._window_size = surface_to_draw.get_width(), surface_to_draw.get_height()
+
 		self.initial_draw()
 
 	def initial_draw(self):
-		self.cross_cell = draw_cross_zero(Cell.CROSS)
-		self.null_cell = draw_cross_zero(Cell.ZERO)
+		self.cross_cell = draw_cross_zero(Cell.CROSS, self._cell_size)
+		self.null_cell = draw_cross_zero(Cell.ZERO, self._cell_size)
 		self.cell_rectangle = self.cross_cell.get_rect()
 
 		self.fieldview = pygame.Surface((self._height , self._width), pygame.SRCALPHA)  
 		self.fieldview.fill(FIELD_COLOR)  # fill the rectangle / surface with specified color
 		for i in range(1, self._field.field_size + 1): # draw grid
-			pygame.draw.line(self.fieldview, COLOR_WHITE, (0, i*CELL_SIZE), (self._width, i*CELL_SIZE))
-			pygame.draw.line(self.fieldview, COLOR_WHITE, (i*CELL_SIZE, 0), (i*CELL_SIZE, self._height))
+			pygame.draw.line(self.fieldview, COLOR_WHITE, (0, i*self._cell_size), (self._width, i*self._cell_size))
+			pygame.draw.line(self.fieldview, COLOR_WHITE, (i*self._cell_size, 0), (i*self._cell_size, self._height))
 		self.fieldview.set_colorkey(COLOR_BLACK)  
 		self.rectangle = self.fieldview.get_rect()  # define rect for placing the rectangle at the desired position
 		self.rectangle.center = (self._window_size[0]/2, self._window_size[1]/2)
@@ -161,7 +164,7 @@ class GameFieldView:
 	def draw_object_in(self, cell_i, cell_j):
 		value = self._field.cells[cell_i][cell_j]
 		if value != Cell.VOID:
-			self.cell_rectangle.center = ((cell_i+1)*CELL_SIZE - CELL_SIZE/2, (cell_j+1)*CELL_SIZE - CELL_SIZE/2)
+			self.cell_rectangle.center = ((cell_i+1)*self._cell_size - self._cell_size/2, (cell_j+1)*self._cell_size - self._cell_size/2)
 		if value == Cell.CROSS:
 			self.fieldview.blit(self.cross_cell, self.cell_rectangle)
 		elif value == Cell.ZERO:
@@ -193,7 +196,7 @@ class GameFieldView:
 
 
 	def get_cell(self, x, y):
-		# вернуть клетку в которую ткнули, если не попали, вернуть None
+		# return clicked cell, if miss, return None
 		cell = [None, None]
 		for i in range(self._field.field_size):
 			if x > self.rectangle.topleft[0] + i*CELL_SIZE and x < self.rectangle.topleft[0] + (i+1)*CELL_SIZE:
@@ -270,8 +273,6 @@ class GameInitManager:
 		self.new_player_form.append_unit(forms.Label, 'radio3x3', (280,200), style={'padding':5}, value='3x3')
 		self.new_player_form.append_unit(forms.Label, 'radio4x4', (380,200), style={'padding':5}, value='4x4')
 		self.new_player_form.append_unit(forms.Label, 'radio5x5', (480,200), style={'padding':5}, value='5x5')
-		#self.new_player_form.append_unit(forms.CheckBox, 'check', (100,350))
-
 
 		@self.new_player_form.bind('start_button', 'click', players)
 		def create_user(players):
@@ -344,7 +345,7 @@ class MainWindow:
 		self.field_size = int()
 		self.players = [None, None]
 		pygame.init()
-		pygame.display.set_caption("Крестики-Нолики")
+		pygame.display.set_caption("Cross and Zero")
 		self.router("init_game")
 
 	def router(self, state):
