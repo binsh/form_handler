@@ -287,8 +287,8 @@ class GameInitManager:
 			else:
 				self.new_player_form.append_unit(forms.Label, 'error_message', (100,250), style={'padding':5,'text_color':(255,0,0),}, value='Input Player names')
 
-		@self.new_player_form.bind(('input_player1', 'input_player2'), 'blur', this=True)
-		def check_form(this=True):
+		@self.new_player_form.bind(('input_player1', 'input_player2'), 'blur',) #this=True
+		def check_form(this):
 			if len(this.value) < 3:
 				this.set_style({'border_color':(255, 0, 0)})
 			else:

@@ -10,11 +10,12 @@ Form handler based on PyGame shapes and evens.
 ### Install pygame  
 python3 -m pip install -U pygame --user  
 
-'''
+''''
 import pygame
 import forms
 
 def main():
+
 	FPS = 30
 	COLOR_INACTIVE = pygame.Color('lightskyblue3')
 	COLOR_ACTIVE = pygame.Color('dodgerblue2')
@@ -77,7 +78,7 @@ def main():
 
 if __name__ == '__main__':
 	main()  
-'''
+''''
 
 ## Example
 

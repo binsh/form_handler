@@ -1,4 +1,6 @@
 import pygame
+#import uuid
+#print uuid.uuid4() #need for future features
 
 COLOR_WHITE = 255, 255, 255
 COLOR_KEY = 0, 0, 0
@@ -21,6 +23,7 @@ class Form: #shapeless conteiner
 	def append_unit(self, unit_type, unit_name, position=(0,0), **kwargs):
 		if unit_name not in self._units:
 			self._units[unit_name] = unit_type(self.surface_to_draw, position, **kwargs)
+			return self._units[unit_name]
 		else:
 			print("element with name ", unit_name, "is exist")
 
@@ -182,11 +185,16 @@ class Input:
 		return decorator
 
 	def on(self, event, fn, *args, **kwargs):
-		if 'this' in kwargs:
-			kwargs['this'] = self
 		self.callback[event] = fn
-		self.callback_args[event] = args
 		self.callback_kwargs[event] = kwargs
+		if hasattr(self.callback[event], '__code__') and 'this' in self.callback[event].__code__.co_varnames: 
+		# maybe unstable
+		# add self object if fn has attribute 'this'
+			this_index = self.callback[event].__code__.co_varnames.index('this')
+			args = list(args)
+			args.insert(this_index, self)
+		self.callback_args[event] = tuple(args)
+
 
 		"""
 		mousemove, wheel, change, input (для текстовых элементов формы), select, submit
