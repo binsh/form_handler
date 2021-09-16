@@ -10,6 +10,7 @@ Form handler based on PyGame shapes and evens.
 ### Install pygame  
 python3 -m pip install -U pygame --user  
 
+### Code  
 ''''
 import pygame
 import forms
@@ -52,8 +53,8 @@ def main():
 		else:
 			form.append_unit(forms.Label, 'error_message', (100,250), style={'padding':5,'text_color':(255,0,0)}, value='Input values')
 
-	@form.bind(('input1', 'input2'), 'blur', this=True)
-	def check_form(this=True):
+	@form.bind(('input1', 'input2'), 'blur',)
+	def check_form(this): # 'this' will be added automatically
 		if len(this.value) < 3:
 			this.set_style({'border_color':(255, 0, 0)})
 		else:
